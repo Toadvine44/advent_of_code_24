@@ -1,32 +1,45 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"math"
+	"os"
 )
 
-func main() {
+// Compute distance scans the input file, and builds
+// the two array inputs. Then, it sorts the arrays and
+// returns the pairwise aggregated distance between them.
+//
+// Input:
+//   - file: the input file
+//
+// Returns:
+//   - Distance between the arrays
+func computeDistance(file *os.File) int {
 
-	// TODO: add I/O so user can input two arrays on cmd line
-	arr1 := []int{8, 12, 3, 0, 6}
-	arr2 := []int{9, 4, 3, 0, 10}
+	scanner := bufio.NewScanner(file)
+	arr1 := []int{}
+	arr2 := []int{}
 
-	if !(len(arr1) == len(arr2)) {
-		fmt.Println("ERROR: Please input arrays of equal length")
-		return
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		var num1, num2 int
+
+		_, err := fmt.Sscanf(line, "%d %d", &num1, &num2)
+		if err != nil {
+			fmt.Println("ERROR: error parsing line.")
+		}
+
+		arr1 = append(arr1, num1)
+		arr2 = append(arr2, num2)
 	}
-
-	fmt.Println("INPUT ARRAY1:", arr1)
-	fmt.Println("INPUT ARRAY2:", arr2)
 
 	arr1 = quickSort(arr1, 0, len(arr1)-1)
 	arr2 = quickSort(arr2, 0, len(arr2)-1)
-
-	fmt.Println("ARRAY1 SORTED:", arr1)
-	fmt.Println("ARRAY2 SORTED:", arr2)
-
-	dist := computeDistance(arr1, arr2)
-	fmt.Println("Distance:", dist)
+	return arrDistance(arr1, arr2)
 }
 
 // Computes the aggregated pairwise distance between two
@@ -34,13 +47,13 @@ func main() {
 // the absolute value of the difference between elements at
 // each index, then aggregates those differences.
 //
-// Input:
+// Input:n"
 //   - arr1: an array of ints
 //   - arr2: an array of ints
 //
 // Returns:
 //   - the distance between arr1 and arr2, -1 in case of error.
-func computeDistance(arr1 []int, arr2 []int) int {
+func arrDistance(arr1 []int, arr2 []int) int {
 	dist := 0
 	if len(arr1) == len(arr2) {
 		for i := 0; i < len(arr1); i++ {
@@ -112,4 +125,14 @@ func swapElem(arr []int, i int, j int) {
 	temp := arr[i]
 	arr[i] = arr[j]
 	arr[j] = temp
+}
+
+func main() {
+
+	file, err := os.Open("input.txt")
+	if err != nil {
+		log.Fatalf("ERROR OPENING INPUT FILE.\n")
+	}
+	defer file.Close()
+	fmt.Println("TOTAL COMPUTED DISTANCE:", computeDistance(file))
 }
