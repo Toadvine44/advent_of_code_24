@@ -17,7 +17,7 @@ import (
 //
 // Returns:
 //   - Distance between the arrays
-func computeDistance(file *os.File) int {
+func sortInput(file *os.File) ([]int, []int) {
 
 	scanner := bufio.NewScanner(file)
 	arr1 := []int{}
@@ -25,9 +25,7 @@ func computeDistance(file *os.File) int {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-
 		var num1, num2 int
-
 		_, err := fmt.Sscanf(line, "%d %d", &num1, &num2)
 		if err != nil {
 			fmt.Println("ERROR: error parsing line.")
@@ -39,7 +37,7 @@ func computeDistance(file *os.File) int {
 
 	arr1 = quickSort(arr1, 0, len(arr1)-1)
 	arr2 = quickSort(arr2, 0, len(arr2)-1)
-	return arrDistance(arr1, arr2)
+	return arr1, arr2
 }
 
 // Computes the aggregated pairwise distance between two
@@ -127,6 +125,29 @@ func swapElem(arr []int, i int, j int) {
 	arr[j] = temp
 }
 
+// Computes the similarity between arr1 and arr2.
+func computeSimilarity(arr1 []int, arr2 []int) int {
+	sim := 0
+	simMap := make(map[int]int)
+	for _, num := range arr2 { // Store the count for each num in arr2
+		val, e := simMap[num]
+		if e {
+			simMap[num] = val + 1
+		} else {
+			simMap[num] = 1
+		}
+	}
+
+	for _, num := range arr1 {
+		val, e := simMap[num]
+		if e { // similarity found
+			sim += num * val
+		}
+	}
+
+	return sim
+}
+
 func main() {
 
 	file, err := os.Open("input.txt")
@@ -134,5 +155,9 @@ func main() {
 		log.Fatalf("ERROR OPENING INPUT FILE.\n")
 	}
 	defer file.Close()
-	fmt.Println("TOTAL COMPUTED DISTANCE:", computeDistance(file))
+
+	arr1, arr2 := sortInput(file)
+
+	fmt.Println("::::: PART 1 ::::: Total computed distance:", arrDistance(arr1, arr2))
+	fmt.Println("::::: PART 2 ::::: Similarity score:", computeSimilarity(arr1, arr2))
 }
