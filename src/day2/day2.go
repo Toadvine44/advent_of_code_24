@@ -58,6 +58,18 @@ func isValidRecord(arr []int) bool {
 	return true
 }
 
+func hasAlternatives(record []int) bool {
+	for i := range record {
+		alt := make([]int, 0)
+		alt = append(alt, record[:i]...)
+		alt = append(alt, record[i+1:]...)
+		if isValidRecord(alt) {
+			return true
+		}
+	}
+	return false
+}
+
 // Iterate through all records and aggregate the total
 // amount of valid records.
 //
@@ -73,9 +85,12 @@ func validateRecords(records [][]int) (int, error) {
 	for _, record := range records {
 		if isValidRecord(record) {
 			numValid++
+		} else {
+			if hasAlternatives(record) {
+				numValid++
+			}
 		}
 	}
-
 	return numValid, nil
 }
 
@@ -97,7 +112,6 @@ func scanReport(file *os.File) ([][]int, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		reportSlice := []int{}
-
 		fields := strings.Fields(line)
 		for _, field := range fields {
 			num, err := strconv.Atoi(field)
@@ -109,7 +123,6 @@ func scanReport(file *os.File) ([][]int, error) {
 		}
 		reports = append(reports, reportSlice)
 	}
-
 	return reports, nil
 }
 
