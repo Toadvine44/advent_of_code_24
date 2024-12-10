@@ -5,32 +5,82 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 )
 
-func evaluate(matches [][][]byte) int {
+func buildWordMap(matches [][][]byte, mulIndices [][]int, doIndices [][]int, dontIndices [][]int) map[int]string {
+
+	wordMap := make(map[int]string)
+
+	for i, mul := range matches { // add multiplies
+		idx := mulIndices[i][0]
+		wordMap[idx] = string(mul[0])
+	}
+
+	for _, doIdx := range doIndices { // add do's
+		wordMap[doIdx[0]] = "do()"
+	}
+
+	for _, dontIdx := range dontIndices { // add don'ts
+		wordMap[dontIdx[0]] = "dont()"
+	}
+
+	return wordMap
+}
+
+func evaluate(matches [][][]byte, mulIndices [][]int, doIndices [][]int, dontIndices [][]int) int {
+
 	sum := 0
 
-	for _, match := range matches {
-		// this is going to be of pattern ['m','u','l','(',....,')']
-		str := string(match[0])
-		re := regexp.MustCompile(`\b\d{1,3}\b`)
-		nums := re.FindAllString(str, 2)
-		n1, _ := strconv.Atoi(nums[0])
-		n2, _ := strconv.Atoi(nums[1])
-		sum += n1 * n2
+	// create a mapping from idx => string
+	wordMap := buildWordMap(matches, mulIndices, doIndices, dontIndices)
+
+	// now for the fun part
+	do := true
+	var keys []int
+	for key := range wordMap {
+		keys = append(keys, key)
 	}
+	sort.Ints(keys)
+
+	for _, key := range keys {
+		val := wordMap[key]
+
+		if val == "do()" {
+			do = true
+		} else if val == "dont()" {
+			do = false
+		} else {
+			if do {
+				re := regexp.MustCompile(`\b\d{1,3}\b`)
+				nums := re.FindAllString(val, 2)
+				n1, _ := strconv.Atoi(nums[0])
+				n2, _ := strconv.Atoi(nums[1])
+				sum += n1 * n2
+			}
+		}
+	}
+
 	return sum
 }
 
 func uncorruptMemory(line string) int {
 
-	pattern := `mul\((\d{1,3}),(\d{1,3})\)`
+	mulPattern := `mul\((\d{1,3}),(\d{1,3})\)`
+	doPattern := `do\(\)`
+	dontPattern := `don't\(\)`
 
-	re := regexp.MustCompile(pattern)
+	reMul := regexp.MustCompile(mulPattern)
+	reDo := regexp.MustCompile(doPattern)
+	reDont := regexp.MustCompile(dontPattern)
 
-	matches := re.FindAllSubmatch([]byte(line), -1)
-	return evaluate(matches)
+	mulVals := reMul.FindAllSubmatch([]byte(line), -1)
+	mulIndices := reMul.FindAllIndex([]byte(line), -1)
+	doIndices := reDo.FindAllIndex([]byte(line), -1)
+	dontIndices := reDont.FindAllIndex([]byte(line), -1)
+
+	return evaluate(mulVals, mulIndices, doIndices, dontIndices)
 }
 
 func main() {
@@ -40,13 +90,12 @@ func main() {
 		fmt.Println("ERROR OPENING FILE")
 		os.Exit(2)
 	}
+	defer file.Close()
 
-	sum := 0
 	scanner := bufio.NewScanner(file)
+	var inputStr string
 	for scanner.Scan() {
-		line := scanner.Text()
-		product := uncorruptMemory(line)
-		sum += product
+		inputStr += scanner.Text()
 	}
-	fmt.Println("SUM OF ALL VALID MULTIPLICATIONS:", sum)
+	fmt.Println("RESULT:", uncorruptMemory(inputStr))
 }
